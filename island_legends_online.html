@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Island Legends - Blox Style RPG</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081522;font-family:Arial,sans-serif;color:#fff}
+#game{display:block;width:100vw;height:100vh;background:#1593c7;image-rendering:auto}
+#hud{position:fixed;top:12px;left:12px;z-index:5;width:min(340px,42vw);pointer-events:none}
+.panel{background:rgba(5,12,25,.78);border:2px solid rgba(255,255,255,.18);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px);box-shadow:0 8px 25px #0005}
+.name{font-size:18px;font-weight:800;margin-bottom:5px}.bar{height:15px;background:#1b2735;border-radius:10px;overflow:hidden;margin:5px 0}.fill{height:100%;transition:.15s}.hp{background:#e74c3c}.en{background:#3498db}.xp{background:#f1c40f}
+.small{font-size:12px;opacity:.85}
+#right{position:fixed;right:12px;top:12px;z-index:5;text-align:right;pointer-events:none}
+#quest{position:fixed;right:12px;top:90px;width:270px;z-index:5}
+#message{position:fixed;left:50%;top:20px;transform:translateX(-50%);z-index:20;background:#111d;color:#fff;padding:10px 18px;border-radius:20px;opacity:0;transition:.25s;font-weight:bold;pointer-events:none}
+#skills{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.skill{width:62px;height:62px;border-radius:14px;border:2px solid #fff5;background:#16233bdd;color:#fff;font-weight:900;font-size:17px;box-shadow:0 5px 15px #0005}
+.skill span{display:block;font-size:9px;margin-top:4px;opacity:.8}
+#mobile{display:none;position:fixed;bottom:18px;left:18px;z-index:12}
+.dpad{display:grid;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px 48px;gap:4px}.dpad button,.act{border:1px solid #fff5;background:#172536cc;color:#fff;border-radius:12px;font-size:20px;font-weight:bold}
+#actions{position:fixed;right:18px;bottom:25px;display:flex;gap:8px;z-index:12}.act{width:65px;height:65px;font-size:13px}
+#start{position:fixed;inset:0;background:linear-gradient(#07111ddd,#081522ee);z-index:50;display:flex;align-items:center;justify-content:center;text-align:center}
+.card{width:min(520px,90vw);padding:30px;border-radius:22px;background:#101d2cee;border:2px solid #ffffff25;box-shadow:0 20px 70px #0008}
+h1{margin:0 0 8px;font-size:42px;color:#ffd34d;text-shadow:0 4px 0 #8d4f00}.card p{opacity:.85;line-height:1.5}.startbtn{padding:14px 30px;border:0;border-radius:14px;background:#ffb703;color:#211600;font-size:18px;font-weight:900;cursor:pointer}
+#help{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:12px;opacity:.65;z-index:5}
+@media(max-width:800px){#mobile{display:block}#help{display:none}#hud{width:250px}.quest{display:none}.skill{width:54px;height:54px}.small{font-size:10px}}
+
+/* iPad / tablet optimization */
+html,body{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{touch-action:none;-webkit-tap-highlight-color:transparent}
+@media (min-width:700px) and (max-width:1400px){
+#hud{width:300px;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left))}
+#right{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right))}
+#quest{right:max(12px,env(safe-area-inset-right));top:100px;width:280px}
+#skills{bottom:max(18px,env(safe-area-inset-bottom));gap:12px}
+.skill{width:72px;height:72px;font-size:20px;border-radius:16px}
+.skill span{font-size:10px}
+#mobile{display:block;left:max(20px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom))}
+.dpad{grid-template-columns:62px 62px 62px;grid-template-rows:62px 62px 62px;gap:6px}
+.dpad button{font-size:27px}
+#actions{right:max(20px,env(safe-area-inset-right));bottom:max(28px,env(safe-area-inset-bottom));gap:12px}
+.act{width:82px;height:82px;font-size:15px;border-radius:18px}
+#help{display:none}
+}
+@media (orientation:portrait) and (min-width:700px){#start:after{content:'Xoay iPad sang ngang để chơi';position:absolute;bottom:9%;left:50%;transform:translateX(-50%);font-size:16px;color:#ffd34d;font-weight:bold}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="start"><div class="card">
+<h1>ISLAND LEGENDS</h1>
+<p>RPG phiêu lưu hải tặc lấy cảm hứng từ các game trái ác quỷ.<br>
+Đánh quái, nhận EXP, lên cấp, hoàn thành nhiệm vụ và khám phá hòn đảo.</p>
+<p><b>PC:</b> WASD / phím mũi tên để di chuyển · Space đánh · Q/E/R dùng skill</p>
+<button class="startbtn" onclick="startGame()">BẮT ĐẦU CHƠI</button>
+</div></div>
+
+<div id="hud"><div class="panel">
+<div class="name">⚔️ Hải Tặc <span id="lvl">Lv.1</span></div>
+<div class="small">❤️ HP <span id="hpText"></span></div><div class="bar"><div id="hp" class="fill hp"></div></div>
+<div class="small">⚡ Năng lượng</div><div class="bar"><div id="en" class="fill en"></div></div>
+<div class="small">⭐ EXP <span id="xpText"></span></div><div class="bar"><div id="xp" class="fill xp"></div></div>
+<div class="small">💰 Beli: <b id="money">0</b> · 🗡️ Kiếm: <b id="sword">Rusty Sword</b></div>
+</div></div>
+
+<div id="right"><div class="panel">🌴 <b>Đảo Khởi Đầu</b><br><span class="small">Kẻ địch: Bandit</span></div></div>
+<div id="quest" class="panel"><b>📜 Nhiệm vụ</b><br>Hạ gục <span id="qcount">0</span>/5 Bandit<br><span class="small">Phần thưởng: 250 Beli + 100 EXP</span></div>
+<div id="message"></div>
+
+<div id="skills">
+<button class="skill" onclick="useSkill('Q')">Q<span>SLASH</span></button>
+<button class="skill" onclick="useSkill('E')">E<span>FIRE</span></button>
+<button class="skill" onclick="useSkill('R')">R<span>BLAST</span></button>
+</div>
+
+<div id="mobile">
+<div class="dpad">
+<div></div><button onpointerdown="hold('up',true)" onpointerup="hold('up',false)">▲</button><div></div>
+<button onpointerdown="hold('left',true)" onpointerup="hold('left',false)">◀</button><div></div><button onpointerdown="hold('right',true)" onpointerup="hold('right',false)">▶</button>
+<div></div><button onpointerdown="hold('down',true)" onpointerup="hold('down',false)">▼</button><div></div>
+</div></div>
+<div id="actions"><button class="act" onclick="attack()">⚔️<br>ĐÁNH</button></div>
+<div id="help">WASD / Arrow: di chuyển · SPACE: đánh · Q/E/R: kỹ năng · Thu thập trái cây để mở skill</div>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<style>
+#mp-login{position:fixed;inset:0;background:#07111dee;z-index:60;display:flex;align-items:center;justify-content:center}
+#mp-login .inner{width:min(360px,90vw);background:#132238;border:1px solid #ffffff35;border-radius:18px;padding:22px;text-align:center;color:white;font-family:Arial}
+#mp-login input{width:95%;padding:12px;border:0;border-radius:8px;margin:10px 0}
+#mp-login button,#mp-chatrow button{padding:10px;border:0;border-radius:8px;background:#ffb703;font-weight:bold}
+#mp-panel{position:fixed;right:12px;top:160px;width:230px;z-index:15;background:#071525e8;border:1px solid #ffffff35;border-radius:13px;padding:10px;color:white;font:12px Arial}
+#mp-chatlog{height:75px;overflow:auto;background:#0004;padding:5px;margin:6px 0;white-space:pre-wrap}
+#mp-chatrow{display:flex;gap:4px}#mp-chatrow input{width:100%;min-width:0}
+@media(max-width:800px){#mp-panel{width:175px;right:6px;top:145px}}
+</style>
+<div id="mp-login"><div class="inner"><h2 style="color:#ffd34d">ISLAND LEGENDS ONLINE</h2><p>Nhập tên để vào server chung</p><input id="mp-name" maxlength="16" value="Pirate"><button onclick="joinOnline()">VÀO SERVER</button><p id="mp-login-status">Sẵn sàng kết nối</p></div></div>
+<div id="mp-panel"><b>🌐 SERVER ONLINE</b><div id="mp-status">Chưa kết nối</div><div>Người chơi: <b id="mp-count">0</b></div><div id="mp-users"></div><div id="mp-chatlog">Chat server</div><div id="mp-chatrow"><input id="mp-chat" maxlength="120" placeholder="Nhắn tin"><button onclick="sendChat()">Gửi</button></div></div>
+
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+let W,H,dpr=1,started=false,last=0,keys={},mobile={up:0,down:0,left:0,right:0};
+const MAX_LEVEL=2450;
+function xpRequired(level){return Math.floor(100*Math.pow(level,1.5));}
+let player={x:0,y:0,r:18,speed:220,hp:100,maxHp:100,en:100,maxEn:100,level:1,xp:0,next:xpRequired(1),money:100,damage:20,fruit:false,inv:0,attackCd:0,hit:0};
+let enemies=[],particles=[],drops=[],qKills=0,questDone=false;
+
+let mpSocket=null,mpJoined=false,remotePlayers={},lastNetSend=0,mpName='Pirate';
+function joinOnline(){
+ const status=document.getElementById('mp-login-status');
+ mpName=(document.getElementById('mp-name').value||'Pirate').trim().slice(0,16)||'Pirate';
+ if(location.protocol==='file:'){status.textContent='Hãy chạy server Node.js, sau đó mở địa chỉ server.';return;}
+ if(typeof io==='undefined'){status.textContent='Không tải được Socket.IO.';return;}
+ status.textContent='Đang kết nối...';
+ mpSocket=io(location.origin,{transports:['websocket','polling']});
+ mpSocket.on('connect',()=>{mpSocket.emit('join',{name:mpName,x:player.x,y:player.y,level:player.level});mpJoined=true;status.textContent='Đã kết nối';document.getElementById('mp-login').style.display='none';document.getElementById('mp-status').textContent='🟢 Online';if(!started)startGame();toast('Đã vào server!');});
+ mpSocket.on('connect_error',()=>{status.textContent='Không kết nối được. Kiểm tra máy chủ.';document.getElementById('mp-status').textContent='🔴 Offline';});
+ mpSocket.on('disconnect',()=>{mpJoined=false;document.getElementById('mp-status').textContent='🔴 Mất kết nối';});
+ mpSocket.on('state',d=>{remotePlayers={};(d.players||[]).forEach(p=>{if(p.id!==mpSocket.id)remotePlayers[p.id]=p;});document.getElementById('mp-count').textContent=(d.players||[]).length;document.getElementById('mp-users').textContent=(d.players||[]).map(p=>p.name+' Lv.'+p.level).join(' · ');});
+ mpSocket.on('chat',m=>addMPChat(m.name+': '+m.text));
+ mpSocket.on('notice',m=>addMPChat('★ '+m));
+}
+function addMPChat(t){let e=document.getElementById('mp-chatlog');e.textContent=(e.textContent+'\n'+t).slice(-1000);e.scrollTop=e.scrollHeight;}
+function sendChat(){let e=document.getElementById('mp-chat'),t=e.value.trim();if(t&&mpSocket&&mpJoined){mpSocket.emit('chat',t);e.value='';}}
+document.getElementById('mp-chat').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+function syncOnline(){if(mpSocket&&mpJoined&&performance.now()-lastNetSend>100){mpSocket.emit('move',{x:player.x,y:player.y,level:player.level});lastNetSend=performance.now();}}
+
+const world={w:2600,h:1800};
+
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);resize();
+
+function startGame(){document.getElementById('start').style.display='none';started=true;player.x=world.w/2;player.y=world.h/2;spawn();toast('Hạ 5 Bandit để hoàn thành nhiệm vụ!');requestAnimationFrame(loop)}
+function spawn(){
+ enemies=[];
+ const spots=[[-500,-220],[-300,250],[0,-350],[350,260],[550,-80],[-650,120],[650,260],[250,500],[-350,-550]];
+ spots.forEach((p,i)=>enemies.push({x:player.x+p[0],y:player.y+p[1],r:20,hp:55,max:55,speed:65,damage:7,cd:0,dead:0,name:'Bandit'}));
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function toast(t){const e=document.getElementById('message');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,1700)}
+function addXP(n){
+ if(player.level>=MAX_LEVEL)return;
+ player.xp+=n;
+ while(player.xp>=player.next && player.level<MAX_LEVEL){
+  player.xp-=player.next;
+  player.level++;
+  player.next=xpRequired(player.level);
+  player.maxHp+=20;
+  player.maxEn+=12;
+  player.hp=player.maxHp;
+  player.en=player.maxEn;
+  player.damage+=6;
+  toast('🎉 LÊN CẤP '+player.level+'!');
+ }
+ if(player.level>=MAX_LEVEL){
+  player.level=MAX_LEVEL;
+  player.xp=0;
+  player.next=xpRequired(MAX_LEVEL);
+  toast('👑 ĐẠT LEVEL TỐI ĐA 2450!');
+ }
+}
+function attack(){
+ if(!started||player.attackCd>0)return;
+ player.attackCd=.38;player.hit=.16;
+ let hit=false;
+ enemies.forEach(e=>{if(!e.dead&&dist(player,e)<75){e.hp-=player.damage;hit=true;burst(e.x,e.y,'#fff',8);if(e.hp<=0)kill(e)}});
+ if(!hit)burst(player.x+Math.cos(player.inv)*30,player.y+Math.sin(player.inv)*30,'#ffe08a',3);
+}
+function kill(e){
+ e.dead=1;qKills++;player.money+=35;addXP(25);burst(e.x,e.y,'#ffcc55',18);
+ if(qKills===3&&!player.fruit){drops.push({x:e.x+20,y:e.y,type:'fruit'});toast('🍎 Một Trái Năng Lượng đã xuất hiện!')}
+ if(qKills>=5&&!questDone){questDone=true;player.money+=250;addXP(100);toast('🏆 Hoàn thành nhiệm vụ! +250 Beli +100 EXP')}
+ setTimeout(()=>{e.x=clamp(player.x+(Math.random()-.5)*900,80,world.w-80);e.y=clamp(player.y+(Math.random()-.5)*700,80,world.h-80);e.hp=e.max;e.dead=0},1800);
+}
+function useSkill(k){
+ if(!started)return;
+ if(k!=='Q'&&!player.fruit){toast('🍎 Hãy nhặt Trái Năng Lượng trước!');return}
+ const cost={Q:12,E:22,R:35}[k];if(player.en<cost){toast('Không đủ năng lượng!');return}
+ player.en-=cost;
+ if(k==='Q'){player.hit=.25;enemies.forEach(e=>{if(!e.dead&&dist(player,e)<115){e.hp-=player.damage*1.8;if(e.hp<=0)kill(e)}});burst(player.x,player.y,'#fff',25)}
+ if(k==='E'){enemies.forEach(e=>{if(!e.dead&&dist(player,e)<180){e.hp-=55;if(e.hp<=0)kill(e)}});burst(player.x,player.y,'#ff6b35',45)}
+ if(k==='R'){enemies.forEach(e=>{if(!e.dead&&dist(player,e)<260){e.hp-=100;if(e.hp<=0)kill(e)}});burst(player.x,player.y,'#b56cff',65)}
+}
+function hold(k,v){mobile[k]=v}
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault();if(e.key===' ')attack();if(e.key.toLowerCase()==='q')useSkill('Q');if(e.key.toLowerCase()==='e')useSkill('E');if(e.key.toLowerCase()==='r')useSkill('R')});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
+
+function update(dt){
+ let dx=(keys.d||keys.arrowright||mobile.right)-(keys.a||keys.arrowleft||mobile.left);
+ let dy=(keys.s||keys.arrowdown||mobile.down)-(keys.w||keys.arrowup||mobile.up);
+ if(dx||dy){let l=Math.hypot(dx,dy);dx/=l;dy/=l;player.x+=dx*player.speed*dt;player.y+=dy*player.speed*dt;player.inv=Math.atan2(dy,dx)}
+ player.x=clamp(player.x,60,world.w-60);player.y=clamp(player.y,60,world.h-60);
+ player.attackCd=Math.max(0,player.attackCd-dt);player.hit=Math.max(0,player.hit-dt);player.en=clamp(player.en+8*dt,0,player.maxEn);
+ enemies.forEach(e=>{if(e.dead)return;let d=dist(player,e);if(d<420){e.x+=(player.x-e.x)/d*e.speed*dt;e.y+=(player.y-e.y)/d*e.speed*dt;if(d<38){e.cd-=dt;if(e.cd<=0){player.hp-=e.damage;e.cd=1.0;burst(player.x,player.y,'#f33',6);if(player.hp<=0){player.hp=player.maxHp;player.x=world.w/2;player.y=world.h/2;player.money=Math.max(0,player.money-50);toast('💀 Bạn đã bị hạ! -50 Beli')}}}}});
+ drops.forEach((d,i)=>{if(dist(player,d)<40){if(d.type==='fruit'){player.fruit=true;player.damage+=15;drops.splice(i,1);toast('🍎 Đã ăn Trái Năng Lượng! Skill E/R mở khóa!')}}});
+ particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;p.vy+=40*dt});particles=particles.filter(p=>p.life>0);
+ hud();
+ syncOnline();
+}
+function burst(x,y,col,n){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=30+Math.random()*170;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.45,col})}}
+function hud(){
+ lvl.textContent='Lv.'+player.level+'/'+MAX_LEVEL;hp.style.width=(player.hp/player.maxHp*100)+'%';en.style.width=(player.en/player.maxEn*100)+'%';xp.style.width=(player.xp/player.next*100)+'%';
+ hpText.textContent=Math.ceil(player.hp)+'/'+player.maxHp;xpText.textContent=player.xp.toLocaleString('vi-VN')+'/'+player.next.toLocaleString('vi-VN');money.textContent=player.money;sword.textContent=player.fruit?'Energy Blade':'Rusty Sword';qcount.textContent=Math.min(qKills,5);
+}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ let camX=clamp(player.x-W/2,0,world.w-W),camY=clamp(player.y-H/2,0,world.h-H);
+ ctx.save();ctx.translate(-camX,-camY);
+ // ocean
+ ctx.fillStyle='#118fc2';ctx.fillRect(0,0,world.w,world.h);
+ // water stripes
+ ctx.strokeStyle='#ffffff18';ctx.lineWidth=2;
+ for(let y=30;y<world.h;y+=70){for(let x=20;x<world.w;x+=100){ctx.beginPath();ctx.arc(x,y,12,0,Math.PI);ctx.stroke()}}
+ // island
+ ctx.fillStyle='#d9bd72';roundRect(ctx,220,180,2160,1440,80);ctx.fill();
+ ctx.fillStyle='#6fbf55';roundRect(ctx,250,210,2100,1380,70);ctx.fill();
+ // sand shore
+ ctx.strokeStyle='#e9d68e';ctx.lineWidth=25;roundRect(ctx,235,195,2130,1410,75);ctx.stroke();
+ // paths
+ ctx.strokeStyle='#b28b50';ctx.lineWidth=65;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(400,950);ctx.quadraticCurveTo(900,700,1250,900);ctx.quadraticCurveTo(1650,1120,2180,700);ctx.stroke();
+ // trees
+ for(let i=0;i<34;i++){let x=300+(i*173)%1950,y=280+(i*257)%1220;if(Math.hypot(x-player.x,y-player.y)>80){ctx.fillStyle='#7b4a28';ctx.fillRect(x-7,y,14,38);ctx.fillStyle='#167d3d';ctx.beginPath();ctx.arc(x,y,34,0,7);ctx.fill();ctx.fillStyle='#219653';ctx.beginPath();ctx.arc(x-18,y+8,23,0,7);ctx.fill()}}
+ // town
+ ctx.fillStyle='#d86d49';roundRect(ctx,1080,770,340,210,18);ctx.fill();ctx.fillStyle='#7a432f';ctx.fillRect(1130,650,100,140);ctx.fillRect(1260,690,80,100);
+ ctx.fillStyle='#fff';ctx.font='bold 24px Arial';ctx.fillText('VILLAGE',1155,1030);
+ // drops
+ drops.forEach(d=>{if(d.type==='fruit'){ctx.fillStyle='#ff4f5e';ctx.beginPath();ctx.arc(d.x,d.y,15,0,7);ctx.fill();ctx.fillStyle='#3a9d45';ctx.fillRect(d.x+5,d.y-15,8,6);}})
+ // enemies
+ enemies.forEach(e=>{if(e.dead)return;ctx.fillStyle='#442b2b';ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill();ctx.fillStyle='#e8b08a';ctx.beginPath();ctx.arc(e.x,e.y-7,10,0,7);ctx.fill();ctx.fillStyle='#ffdf4d';ctx.fillRect(e.x-13,e.y-32,26,4);ctx.fillStyle='#e33';ctx.fillRect(e.x-13,e.y-32,26*(e.hp/e.max),4);ctx.fillStyle='#fff';ctx.font='11px Arial';ctx.textAlign='center';ctx.fillText('Bandit',e.x,e.y-40)})
+
+ // Người chơi khác trong server
+ Object.values(remotePlayers).forEach(rp=>{ctx.save();ctx.translate(rp.x,rp.y);ctx.fillStyle='#a855f7';ctx.beginPath();ctx.arc(0,0,17,0,7);ctx.fill();ctx.fillStyle='#f2bd91';ctx.beginPath();ctx.arc(0,-6,10,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.textAlign='center';ctx.fillText((rp.name||'Pirate')+' Lv.'+(rp.level||1),0,-29);ctx.restore();});
+ // player
+ ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.inv||0);
+ ctx.fillStyle=player.hit>0?'#fff':'#2c55c7';ctx.beginPath();ctx.arc(0,0,player.r,0,7);ctx.fill();
+ ctx.fillStyle='#f0b58e';ctx.beginPath();ctx.arc(0,-6,11,0,7);ctx.fill();
+ ctx.fillStyle='#181818';ctx.beginPath();ctx.arc(0,-16,15,Math.PI,7);ctx.fill();
+ ctx.fillStyle='#d8d8d8';ctx.fillRect(15,-3,35,5);ctx.restore();
+ // particles
+ particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,4,0,7);ctx.fill()});ctx.globalAlpha=1;
+ ctx.restore();
+}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function loop(t){if(!started)return;let dt=Math.min(.033,(t-last)/1000||.016);last=t;update(dt);draw();requestAnimationFrame(loop)}
+</script>
+</body>
+</html>
